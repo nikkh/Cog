@@ -17,6 +17,7 @@ namespace Cog
         public static Single Sentiment_Negative { get; set; }
         public static string TextAnalyticsSubscriptionKey { get; internal set; }
         public static string BingSpeechApiSubscriptionKey { get; internal set; }
+        public static int MaxDocumentSizeInCharacters { get; internal set; }
     }
 
     

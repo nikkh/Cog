@@ -32,10 +32,11 @@ namespace Cog
         {
             return string.Format("Id = {0}, Entry Type = {1}, Source={2} Text to Analyse ={3}, Score = {4}", Id, SentimentBatchEntryType, FileName, TextToAnalyse.Substring(0, 20), SentimentScore);
         }
+        public string Error { get; set; }
     }
 
   
 
     public enum SentimentBatchEntryType { Audio, Text, Tweet}
-    public enum Sentiment { Unknown, Negative, Indifferent, Positive }
+    public enum Sentiment { Unknown, Negative, Neutral, Positive, Error }
 }

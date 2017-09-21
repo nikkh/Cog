@@ -167,6 +167,11 @@ namespace NicksCognitiveTest
             if (batchSize == 0) batchSize = 10;
             Global.BatchSize = batchSize;
 
+            var maxDocumentSizeInCharactersString = CloudConfigurationManager.GetSetting("MaxDocumentSizeInCharacters");
+            Int32.TryParse(maxDocumentSizeInCharactersString, out int maxDocumentSizeInCharacters);
+            if (maxDocumentSizeInCharacters == 0) maxDocumentSizeInCharacters = 5000;
+            Global.MaxDocumentSizeInCharacters = maxDocumentSizeInCharacters;
+
             var NegativeString = CloudConfigurationManager.GetSetting("Sentiment_Negative");
             Single.TryParse(NegativeString, out Single negative);
             if (negative == 0) negative = (Single)0.4;
@@ -246,6 +251,8 @@ namespace NicksCognitiveTest
             ConCol("Processing text file: {0}", ConsoleColor.Gray, Path.GetFileName(fullFilePath));
 
             string textToProcess = File.ReadAllText(fullFilePath);
+            if(textToProcess.Length > Global.MaxDocumentSizeInCharacters) textToProcess = textToProcess.Substring(0,Global.MaxDocumentSizeInCharacters);
+
             SentimentBatchEntry sbe = new SentimentBatchEntry(SentimentBatchEntryType.Audio, textToProcess, Path.GetFileName(fullFilePath));
             batch.Add(sbe);
             ProcessBatchIfEnoughEntries();
@@ -255,15 +262,15 @@ namespace NicksCognitiveTest
         private static void ProcessAudio(string fullFilePath)
         {
             // Convert file to WAV
-            ConCol("Processing audio file: {0}", ConsoleColor.Gray, Path.GetFileName(fullFilePath));
+            ConCol("Processing audio file: {0}", ConsoleColor.Yellow, Path.GetFileName(fullFilePath));
             var wavFileName = Convertm4aWav(fullFilePath);
-            ConCol("Converted to .wav format {0}", ConsoleColor.Gray, Path.GetFileName(wavFileName));
+            ConCol("Converted to .wav format {0}", ConsoleColor.Yellow, Path.GetFileName(wavFileName));
 
             // Transcribe File
             string trancribedAudio = TranscribeAudio(wavFileName);
             var textFileName = String.Format(@"{0}\{1}{2}", Path.GetDirectoryName(fullFilePath), Path.GetFileNameWithoutExtension(fullFilePath), ".txt");
             // Save Transcribed File (as .txt) - will trigger normal file processing
-            ConCol("Saving text transcription of audio file {0}", ConsoleColor.Gray, Path.GetFileName(textFileName));
+            ConCol("Saving text transcription of audio file {0}", ConsoleColor.Yellow, Path.GetFileName(textFileName));
             File.WriteAllText(textFileName, trancribedAudio);
 
            
@@ -311,9 +318,22 @@ namespace NicksCognitiveTest
         private static void ProcessResults(SentimentBatchEntry item)
         {
             ConsoleColor appropriateColour = ConsoleColor.Red;
-            if (item.Sentiment == Sentiment.Indifferent) appropriateColour = ConsoleColor.DarkYellow;
+            if (item.Sentiment == Sentiment.Neutral) appropriateColour = ConsoleColor.DarkYellow;
             if (item.Sentiment == Sentiment.Positive) appropriateColour = ConsoleColor.Green;
+            if (item.Sentiment == Sentiment.Negative) appropriateColour = ConsoleColor.Cyan;
             ConCol("{0} was analysed. Sentiment Score was {1}. Sentiment is {2}", appropriateColour, item.FileName, item.SentimentScore.ToString(), item.Sentiment.ToString().ToUpper());
+            if (item.Sentiment == Sentiment.Error)
+            {
+                if (item.Error == null) item.Error = "Error field unexpectedly null";
+                ConCol(item.Error, appropriateColour);
+            }
+            else
+            {
+                string trimmedTextToAnalyse = item.TextToAnalyse;
+                if (item.TextToAnalyse.Length > 100) trimmedTextToAnalyse = item.TextToAnalyse.Substring(0, 99);
+                ConCol("Text: {0}", appropriateColour, trimmedTextToAnalyse);
+            }
+
         }
 
         private static void ArchiveFile(string fileName)
@@ -674,8 +694,16 @@ namespace NicksCognitiveTest
                 entries.Where(x => x.Id == id).FirstOrDefault().Sentiment = GetSentiment(score);
             }
 
+            foreach (var item in sentimentResults["errors"])
+            {
+                
+                Int32.TryParse(item["id"].ToString(), out int id);
+                entries.Where(x => x.Id == id).FirstOrDefault().Sentiment = Sentiment.Error;
+                entries.Where(x => x.Id == id).FirstOrDefault().Error = item["message"].ToString();
+                
+            }
 
-         
+
 
             return entries;
         }
@@ -687,7 +715,7 @@ namespace NicksCognitiveTest
             {
                 if (score < Global.Sentiment_Indifferent)
                 {
-                    result = Sentiment.Indifferent;
+                    result = Sentiment.Neutral;
                 }
                 else
                 {
