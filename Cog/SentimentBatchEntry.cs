@@ -13,8 +13,9 @@ namespace Cog
             Id = 0;
             SentimentBatchEntryType = type;
             TextToAnalyse = text;
-            Source = source;
+            FileName = source;
             SentimentScore = 0;
+            Sentiment = Sentiment.Unknown;
         }
 
         public SentimentBatchEntryType SentimentBatchEntryType { get; set; }
@@ -23,16 +24,18 @@ namespace Cog
 
         public int  Id { get; set; }
 
-        public string Source { get; set; }
+        public string FileName { get; set; }
 
         public Single SentimentScore { get; set; }
+        public Sentiment Sentiment { get; set; }
         public override string ToString()
         {
-            return string.Format("Id = {0}, Entry Type = {1}, Source={2} Text to Analyse ={3}, Score = {4}", Id, SentimentBatchEntryType, Source, TextToAnalyse.Substring(0, 20), SentimentScore);
+            return string.Format("Id = {0}, Entry Type = {1}, Source={2} Text to Analyse ={3}, Score = {4}", Id, SentimentBatchEntryType, FileName, TextToAnalyse.Substring(0, 20), SentimentScore);
         }
     }
 
   
 
     public enum SentimentBatchEntryType { Audio, Text, Tweet}
+    public enum Sentiment { Unknown, Negative, Indifferent, Positive }
 }
