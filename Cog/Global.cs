@@ -18,6 +18,10 @@ namespace Cog
         public static string TextAnalyticsSubscriptionKey { get; internal set; }
         public static string BingSpeechApiSubscriptionKey { get; internal set; }
         public static int MaxDocumentSizeInCharacters { get; internal set; }
+
+        public static string TwitterConsumerKey { get; internal set; }
+        public static string TwitterConsumerSecret { get; internal set; }
+        public static string TwitterOAuthUrl { get; internal set; }
     }
 
     
